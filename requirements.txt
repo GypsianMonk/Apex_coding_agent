@@ -1,0 +1,41 @@
+# ── Core Orchestration ──────────────────────────────────────────
+langgraph>=0.3.0
+langchain-core>=0.3.0
+langchain-anthropic>=0.3.0
+
+# ── LLM Provider ────────────────────────────────────────────────
+anthropic>=0.42.0
+
+# ── API Layer ───────────────────────────────────────────────────
+fastapi>=0.115.0
+uvicorn[standard]>=0.34.0
+websockets>=14.0
+pydantic>=2.10.0
+pydantic-settings>=2.7.0
+
+# ── State & Caching ────────────────────────────────────────────
+redis[hiredis]>=5.2.0
+aioredis>=2.0.0
+
+# ── Code Execution & Analysis ──────────────────────────────────
+docker>=7.1.0
+ruff>=0.8.0
+
+# ── Observability ──────────────────────────────────────────────
+opentelemetry-api>=1.29.0
+opentelemetry-sdk>=1.29.0
+opentelemetry-exporter-otlp>=1.29.0
+opentelemetry-instrumentation-fastapi>=0.50b0
+opentelemetry-instrumentation-redis>=0.50b0
+prometheus-client>=0.21.0
+structlog>=24.4.0
+
+# ── Utilities ──────────────────────────────────────────────────
+httpx>=0.28.0
+tenacity>=9.0.0
+python-dotenv>=1.0.0
+rich>=13.9.0
+orjson>=3.10.0
+PyYAML>=6.0.0
+aiofiles>=24.1.0
+psutil>=6.1.0
