@@ -298,7 +298,7 @@ class CodeSandbox:
             "bash": ["bash", filepath],
             "ruby": ["ruby", filepath],
             "go": ["go", "run", filepath],
-            "rust": ["rustc", filepath, "-o", "/tmp/apex_rust_out", "&&", "/tmp/apex_rust_out"],
+            "rust": ["sh", "-c", f"rustc {filepath} -o /tmp/apex_rust_out && /tmp/apex_rust_out"],
         }
         if language not in commands:
             raise ValueError(f"Unsupported language: {language}")
