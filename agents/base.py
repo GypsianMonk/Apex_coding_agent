@@ -191,24 +191,52 @@ class BaseAgent(ABC):
 
     async def safe_execute(self, state: ApexState) -> ApexState:
         """Execute with error handling — catches failures and records them."""
+        import datetime
+        now_iso = lambda: datetime.datetime.now(datetime.timezone.utc).isoformat()
+        
+        # Update subtask status to IN_PROGRESS
+        for task in state.subtasks:
+            if task.agent == self.role and task.status == TaskStatus.PENDING:
+                task.status = TaskStatus.IN_PROGRESS
+                task.started_at = now_iso()
+                
         with track_duration(self.role.value):
             try:
                 state.current_agent = self.role
-                return await self.execute(state)
+                result_state = await self.execute(state)
+                # Update subtask status to COMPLETED
+                for task in result_state.subtasks:
+                    if task.agent == self.role and task.status == TaskStatus.IN_PROGRESS:
+                        task.status = TaskStatus.COMPLETED
+                        task.completed_at = now_iso()
+                return result_state
             except anthropic.APIStatusError as exc:
                 failure_type = FailureType.API_ERROR
                 if exc.status_code == 429:
                     failure_type = FailureType.TIMEOUT
                 state.add_failure(self.role, str(exc), failure_type, retryable=True)
                 self.log.error("agent.failed", error=str(exc), failure_type=failure_type.value)
+                self._fail_subtasks(state, str(exc))
                 return state
-            except TimeoutError:
+            except TimeoutError as exc:
                 state.add_failure(self.role, "Execution timeout", FailureType.TIMEOUT, retryable=True)
+                self._fail_subtasks(state, "Execution timeout")
                 return state
-            except MemoryError:
+            except MemoryError as exc:
                 state.add_failure(self.role, "Out of memory", FailureType.OOM, retryable=False)
+                self._fail_subtasks(state, "Out of memory")
                 return state
             except Exception as exc:
                 state.add_failure(self.role, str(exc), FailureType.UNKNOWN, retryable=True)
                 self.log.error("agent.unexpected_error", error=str(exc), exc_info=True)
+                self._fail_subtasks(state, str(exc))
                 return state
+
+    def _fail_subtasks(self, state: ApexState, error_msg: str) -> None:
+        """Helper to mark matching subtasks as FAILED."""
+        import datetime
+        for task in state.subtasks:
+            if task.agent == self.role and task.status == TaskStatus.IN_PROGRESS:
+                task.status = TaskStatus.FAILED
+                task.error = error_msg
+                task.completed_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
