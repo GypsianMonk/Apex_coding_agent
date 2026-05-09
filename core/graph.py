@@ -66,10 +66,16 @@ async def analyze_node(state: dict[str, Any]) -> dict[str, Any]:
     # Merge results back
     apex_state.requirements = analyst_result.requirements
     apex_state.architecture = architect_result.architecture
-    apex_state.agent_trace.extend(analyst_result.agent_trace[len(apex_state.agent_trace):])
-    apex_state.agent_trace.extend(architect_result.agent_trace[len(apex_state.agent_trace):])
-    apex_state.total_tokens_used = analyst_result.total_tokens_used + architect_result.total_tokens_used
-    apex_state.total_cost_usd = analyst_result.total_cost_usd + architect_result.total_cost_usd
+    
+    # Merge traces correctly using the original length
+    orig_len = len(apex_state.agent_trace)
+    apex_state.agent_trace.extend(analyst_result.agent_trace[orig_len:])
+    apex_state.agent_trace.extend(architect_result.agent_trace[orig_len:])
+    
+    # Add only the newly accumulated tokens and costs
+    apex_state.total_tokens_used += (analyst_result.total_tokens_used - apex_state.total_tokens_used) + (architect_result.total_tokens_used - apex_state.total_tokens_used)
+    apex_state.total_cost_usd += (analyst_result.total_cost_usd - apex_state.total_cost_usd) + (architect_result.total_cost_usd - apex_state.total_cost_usd)
+    apex_state.total_duration_seconds += (analyst_result.total_duration_seconds - apex_state.total_duration_seconds) + (architect_result.total_duration_seconds - apex_state.total_duration_seconds)
 
     return apex_state.model_dump(mode="json")
 
